@@ -120,6 +120,20 @@ public class PlexWallpaperGenerator {
 	}
     }
 
+    private static String sanitizeTitle(final String title) {
+	String sanitized = title.toLowerCase().replaceAll("[^\\p{javaLowerCase}\\d]", "_");
+	while (sanitized.indexOf("__") != -1) {
+	    sanitized = sanitized.replace("__", "_");
+	}
+	if (sanitized.startsWith("_")) {
+	    sanitized = sanitized.substring(1);
+	}
+	if (sanitized.endsWith("_")) {
+	    sanitized = sanitized.substring(0, sanitized.length() - 1);
+	}
+	return sanitized;
+    }
+
     public static void main(final String[] args) {
 	try {
 	    final OkHttpClient client = new OkHttpClient();
@@ -136,16 +150,19 @@ public class PlexWallpaperGenerator {
 		for (int index = 0; index < videos.getLength(); index++) {
 		    final NamedNodeMap videoAttributes = videos.item(index).getAttributes();
 		    final String id = videoAttributes.getNamedItem("ratingKey").getNodeValue();
+		    String title = "";
 		    Node titleNode = videoAttributes.getNamedItem("originalTitle");
-		    if (titleNode == null) {
-			titleNode = videoAttributes.getNamedItem("title");
+		    if (titleNode != null) {
+			title = PlexWallpaperGenerator.sanitizeTitle(titleNode.getNodeValue());
 		    }
-		    final String title = titleNode.getNodeValue();
+		    if (title.length() == 0) {
+			titleNode = videoAttributes.getNamedItem("title");
+			title = PlexWallpaperGenerator.sanitizeTitle(titleNode.getNodeValue());
+		    }
 		    PlexWallpaperGenerator.handleMovie(id,
 			    PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("art").getNodeValue()),
 			    PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("thumb").getNodeValue()),
-			    title.replaceAll("[\\\\/:*?\"<>|]", "") + " ("
-				    + videoAttributes.getNamedItem("year").getNodeValue() + ")");
+			    title + " (" + videoAttributes.getNamedItem("year").getNodeValue() + ")");
 		    // TODO Use proper LOG library (e.g. SLF4J); remark to apply to all uses of
 		    // System.xxx.print
 		    System.out.println(index + 1 + ". " + title);
