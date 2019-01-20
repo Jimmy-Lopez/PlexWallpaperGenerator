@@ -25,7 +25,7 @@ import okhttp3.Response;
 
 public class PlexWallpaperGenerator {
     // TODO see #ConfigurableLayout
-    private static final Dimension STILL_DIMENSION = new Dimension(1920, 1080);
+    private static final Dimension STILL_DIMENSION = new Dimension(1924, 1080);
     // TODO see #ConfigurableLayout
     private static final int POSTER_HEIGHT = 692;
     private static final String TARGET_DIRECTORY_PATH = PlexWallpaperGenerator.getSystemProperty(
