@@ -40,11 +40,10 @@ public class PlexWallpaperGenerator {
     private static String getSystemProperty(final String shortName, final String helpDescriptionIfAbsent) {
 	final String fullName = PlexWallpaperGenerator.class.getName() + "." + shortName;
 	final String value = System.getProperty(fullName);
-	if (value == null) {
+	if (value == null)
 	    System.err.println(
 		    "A system property " + fullName + " is required (e.g. by passing a command-line argument \"-D"
 			    + fullName + "=<value>\"). Its value should be: " + helpDescriptionIfAbsent);
-	}
 	return value;
     }
 
@@ -54,23 +53,20 @@ public class PlexWallpaperGenerator {
     }
 
     private static Image resizeImage(final BufferedImage image, final int width, final int height) {
-	if (width == -1 && height == -1 || width == image.getWidth() && height == image.getHeight()) {
+	if (width == -1 && height == -1 || width == image.getWidth() && height == image.getHeight())
 	    return image;
-	}
 
-	if (width == -1) {
+	if (width == -1)
 	    return image.getScaledInstance(image.getWidth() * height / image.getHeight(), height, Image.SCALE_SMOOTH);
-	}
 
-	if (height == -1) {
+	if (height == -1)
 	    return image.getScaledInstance(width, image.getHeight() * width / image.getWidth(), Image.SCALE_SMOOTH);
-	}
 
 	final Point cropOrigin = new Point(0, 0);
 	Dimension cropDimension = new Dimension(image.getWidth(), height * image.getWidth() / width);
-	if (cropDimension.height < image.getHeight()) {
+	if (cropDimension.height < image.getHeight())
 	    cropOrigin.y = (image.getHeight() - cropDimension.height) / 2;
-	} else {
+	else {
 	    cropDimension = new Dimension(width * image.getHeight() / height, image.getHeight());
 	    cropOrigin.x = (image.getWidth() - cropDimension.width) / 2;
 	}
@@ -81,9 +77,8 @@ public class PlexWallpaperGenerator {
     private static void handleMovie(final String id, final String stillUrl, final String posterUrl,
 	    final String targetFileName) throws IOException {
 	final File targetFile = new File(TARGET_DIRECTORY_PATH, targetFileName + "." + id + ".png");
-	if (targetFile.exists()) {
+	if (targetFile.exists())
 	    return;
-	}
 	final File[] previousFiles = new File(TARGET_DIRECTORY_PATH).listFiles(new FilenameFilter() {
 	    @Override
 	    public boolean accept(final File directory, final String name) {
@@ -112,25 +107,20 @@ public class PlexWallpaperGenerator {
 	    ImageIO.write(combinedImage, "PNG", targetFile);
 	    System.out.println("File generated: " + targetFile.getCanonicalPath());
 
-	    if (previousFiles.length > 0) {
-		for (final File previousFile : previousFiles) {
+	    if (previousFiles.length > 0)
+		for (final File previousFile : previousFiles)
 		    previousFile.delete();
-		}
-	    }
 	}
     }
 
     private static String sanitizeTitle(final String title) {
 	String sanitized = title.toLowerCase().replaceAll("[^\\p{javaLowerCase}\\d]", "_");
-	while (sanitized.indexOf("__") != -1) {
+	while (sanitized.indexOf("__") != -1)
 	    sanitized = sanitized.replace("__", "_");
-	}
-	if (sanitized.startsWith("_")) {
+	if (sanitized.startsWith("_"))
 	    sanitized = sanitized.substring(1);
-	}
-	if (sanitized.endsWith("_")) {
+	if (sanitized.endsWith("_"))
 	    sanitized = sanitized.substring(0, sanitized.length() - 1);
-	}
 	return sanitized;
     }
 
@@ -140,9 +130,8 @@ public class PlexWallpaperGenerator {
 	    final Request request = new Request.Builder()
 		    .url(PlexWallpaperGenerator.getFullUrl("/library/sections/" + LIBRARY_ID + "/all")).get().build();
 	    try (Response response = client.newCall(request).execute()) {
-		if (!response.isSuccessful()) {
+		if (!response.isSuccessful())
 		    throw new IOException("Unexpected response code: " + response + " " + response.body().string());
-		}
 
 		final Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder()
 			.parse(response.body().byteStream());
@@ -152,9 +141,8 @@ public class PlexWallpaperGenerator {
 		    final String id = videoAttributes.getNamedItem("ratingKey").getNodeValue();
 		    String title = "";
 		    Node titleNode = videoAttributes.getNamedItem("originalTitle");
-		    if (titleNode != null) {
+		    if (titleNode != null)
 			title = PlexWallpaperGenerator.sanitizeTitle(titleNode.getNodeValue());
-		    }
 		    if (title.length() == 0) {
 			titleNode = videoAttributes.getNamedItem("title");
 			title = PlexWallpaperGenerator.sanitizeTitle(titleNode.getNodeValue());
