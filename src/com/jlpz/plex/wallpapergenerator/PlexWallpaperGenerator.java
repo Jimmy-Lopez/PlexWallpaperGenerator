@@ -37,6 +37,9 @@ public class PlexWallpaperGenerator {
 	    "X-Plex-Token to use to authenticate on the PLEX server (see https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)");
     private static final String LIBRARY_ID = PlexWallpaperGenerator.getMandatorySystemProperty("LIBRARY_ID",
 	    "Section ID of the library you want to generate wallpapers from (you can find it in the attribute \"librarySectionID\" of the same XML page used to retrieve the X-Plex-Token)");
+    private static final String[] FORBIDDEN_KEYWORDS = PlexWallpaperGenerator.getOptionalMultipleSystemProperty(
+	    "FORBIDDEN_KEYWORDS",
+	    "Case-insensitive keywords that - if at least one is contained in a title - indicates which movies are to be skipped");
 
     private static String getMandatorySystemProperty(final String shortName, final String helpDescriptionIfAbsent) {
 	final String fullName = PlexWallpaperGenerator.class.getName() + "." + shortName;
@@ -46,6 +49,19 @@ public class PlexWallpaperGenerator {
 		    "A system property " + fullName + " is required (e.g. by passing a command-line argument \"-D"
 			    + fullName + "=<value>\"). Its value should be: " + helpDescriptionIfAbsent);
 	return value;
+    }
+
+    private static String[] getOptionalMultipleSystemProperty(final String shortName,
+	    final String helpDescriptionIfAbsent) {
+	final String fullName = PlexWallpaperGenerator.class.getName() + "." + shortName;
+	final String value = System.getProperty(fullName);
+	if (value == null || value.strip().length() == 0) {
+	    System.out.println("Note that a system property " + fullName
+		    + " can be provided (e.g. by passing a command-line argument \"-D" + fullName
+		    + "=<value1>;...;<valueN>\"). Its values would be: " + helpDescriptionIfAbsent);
+	    return new String[0];
+	}
+	return value.toLowerCase().split(";");
     }
 
     private static String getFullUrl(final String uri) {
@@ -137,7 +153,7 @@ public class PlexWallpaperGenerator {
 		final Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder()
 			.parse(response.body().byteStream());
 		final NodeList videos = document.getElementsByTagName("Video");
-		for (int index = 0; index < videos.getLength(); index++) {
+		VideoLoop: for (int index = 0; index < videos.getLength(); index++) {
 		    final NamedNodeMap videoAttributes = videos.item(index).getAttributes();
 		    final String id = videoAttributes.getNamedItem("ratingKey").getNodeValue();
 		    String title = "";
@@ -150,6 +166,13 @@ public class PlexWallpaperGenerator {
 		    }
 		    if (videoAttributes.getNamedItem("year") != null)
 			title += " (" + videoAttributes.getNamedItem("year").getNodeValue() + ")";
+		    final String lowerCaseTitle = title.toLowerCase();
+		    for (final String forbiddenKeyword : FORBIDDEN_KEYWORDS)
+			if (lowerCaseTitle.contains(forbiddenKeyword)) {
+			    System.out.println("Skipped because contains forbidden keyword ["
+				    + forbiddenKeyword.toUpperCase() + "]: " + title);
+			    continue VideoLoop;
+			}
 		    if (videoAttributes.getNamedItem("art") == null || videoAttributes.getNamedItem("thumb") == null) {
 			System.err.println("Image missing for: " + title);
 			continue;
