@@ -147,10 +147,16 @@ public class PlexWallpaperGenerator {
 			titleNode = videoAttributes.getNamedItem("title");
 			title = PlexWallpaperGenerator.sanitizeTitle(titleNode.getNodeValue());
 		    }
+		    if (videoAttributes.getNamedItem("year") != null)
+			title += " (" + videoAttributes.getNamedItem("year").getNodeValue() + ")";
+		    if (videoAttributes.getNamedItem("art") == null || videoAttributes.getNamedItem("thumb") == null) {
+			System.err.println("Image missing for: " + title);
+			continue;
+		    }
 		    PlexWallpaperGenerator.handleMovie(id,
 			    PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("art").getNodeValue()),
 			    PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("thumb").getNodeValue()),
-			    title + " (" + videoAttributes.getNamedItem("year").getNodeValue() + ")");
+			    title);
 		    // TODO Use proper LOG library (e.g. SLF4J); remark to apply to all uses of
 		    // System.xxx.print
 		    System.out.println(index + 1 + ". " + title);
