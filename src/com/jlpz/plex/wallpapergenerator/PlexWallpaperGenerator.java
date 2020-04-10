@@ -39,7 +39,10 @@ public class PlexWallpaperGenerator {
 	    "Section ID of the library you want to generate wallpapers from (you can find it in the attribute \"librarySectionID\" of the same XML page used to retrieve the X-Plex-Token)");
     private static final String[] FORBIDDEN_KEYWORDS = PlexWallpaperGenerator.getOptionalMultipleSystemProperty(
 	    "FORBIDDEN_KEYWORDS",
-	    "Case-insensitive keywords that - if at least one is contained in a title - indicates which movies are to be skipped");
+	    "Case-insensitive keywords that - if at least one is contained in a title - indicate which movies are to be skipped");
+    private static final String[] MANDATORY_GENRES = PlexWallpaperGenerator.getOptionalMultipleSystemProperty(
+	    "MANDATORY_GENRES",
+	    "Case-insensitive genres that - if at least one is contained in tags - indicate which movies are to be processed");
 
     private static String getMandatorySystemProperty(final String shortName, final String helpDescriptionIfAbsent) {
 	final String fullName = PlexWallpaperGenerator.class.getName() + "." + shortName;
@@ -153,8 +156,9 @@ public class PlexWallpaperGenerator {
 		final Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder()
 			.parse(response.body().byteStream());
 		final NodeList videos = document.getElementsByTagName("Video");
-		VideoLoop: for (int index = 0; index < videos.getLength(); index++) {
-		    final NamedNodeMap videoAttributes = videos.item(index).getAttributes();
+		VideoLoop: for (int videoIndex = 0; videoIndex < videos.getLength(); videoIndex++) {
+		    final Node videoNode = videos.item(videoIndex);
+		    final NamedNodeMap videoAttributes = videoNode.getAttributes();
 		    final String id = videoAttributes.getNamedItem("ratingKey").getNodeValue();
 		    String title = "";
 		    Node titleNode = videoAttributes.getNamedItem("originalTitle");
@@ -173,6 +177,25 @@ public class PlexWallpaperGenerator {
 				    + forbiddenKeyword.toUpperCase() + "]: " + title);
 			    continue VideoLoop;
 			}
+		    GenreCheck: if (MANDATORY_GENRES.length > 0) {
+			final NodeList videoChildrenNodes = videoNode.getChildNodes();
+			for (int videoChildIndex = 0; videoChildIndex < videoChildrenNodes
+				.getLength(); videoChildIndex++) {
+			    final Node videoChild = videoChildrenNodes.item(videoChildIndex);
+			    if (videoChild.getNodeName().equals("Genre")) {
+				final NamedNodeMap genreAttributes = videoChild.getAttributes();
+				final Node genreTag = genreAttributes.getNamedItem("tag");
+				if (genreTag != null) {
+				    final String genreName = genreTag.getNodeValue();
+				    for (final String mandatoryGenre : MANDATORY_GENRES)
+					if (mandatoryGenre.equalsIgnoreCase(genreName))
+					    break GenreCheck;
+				}
+			    }
+			}
+			System.out.println("Skipped because isn't tagged with any of the mandatory genres: " + title);
+			continue VideoLoop;
+		    }
 		    if (videoAttributes.getNamedItem("art") == null || videoAttributes.getNamedItem("thumb") == null) {
 			System.err.println("Image missing for: " + title);
 			continue;
@@ -183,7 +206,7 @@ public class PlexWallpaperGenerator {
 			    title);
 		    // TODO Use proper LOG library (e.g. SLF4J); remark to apply to all uses of
 		    // System.xxx.print
-		    System.out.println(index + 1 + ". " + title);
+		    System.out.println(videoIndex + 1 + ". " + title);
 		}
 	    }
 
