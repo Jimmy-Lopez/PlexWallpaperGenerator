@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -146,6 +148,9 @@ public class PlexWallpaperGenerator {
 
     public static void main(final String[] args) {
 	try {
+	    if (MANDATORY_GENRES.length > 0)
+		System.out.println("Will only process movies which are tagged with one of these genres: ["
+			+ String.join(", ", MANDATORY_GENRES) + "]");
 	    final OkHttpClient client = new OkHttpClient();
 	    final Request request = new Request.Builder()
 		    .url(PlexWallpaperGenerator.getFullUrl("/library/sections/" + LIBRARY_ID + "/all")).get().build();
@@ -179,6 +184,7 @@ public class PlexWallpaperGenerator {
 			}
 		    GenreCheck: if (MANDATORY_GENRES.length > 0) {
 			final NodeList videoChildrenNodes = videoNode.getChildNodes();
+			final List<String> genreNames = new ArrayList<>(videoChildrenNodes.getLength());
 			for (int videoChildIndex = 0; videoChildIndex < videoChildrenNodes
 				.getLength(); videoChildIndex++) {
 			    final Node videoChild = videoChildrenNodes.item(videoChildIndex);
@@ -186,14 +192,16 @@ public class PlexWallpaperGenerator {
 				final NamedNodeMap genreAttributes = videoChild.getAttributes();
 				final Node genreTag = genreAttributes.getNamedItem("tag");
 				if (genreTag != null) {
-				    final String genreName = genreTag.getNodeValue();
+				    final String genreName = genreTag.getNodeValue().toLowerCase();
 				    for (final String mandatoryGenre : MANDATORY_GENRES)
-					if (mandatoryGenre.equalsIgnoreCase(genreName))
+					if (mandatoryGenre.equals(genreName))
 					    break GenreCheck;
+				    genreNames.add(genreName);
 				}
 			    }
 			}
-			System.out.println("Skipped because isn't tagged with any of the mandatory genres: " + title);
+			System.out.println("Skipped because isn't tagged with any of the mandatory genres: " + title
+				+ " [" + String.join(", ", genreNames) + "]");
 			continue VideoLoop;
 		    }
 		    if (videoAttributes.getNamedItem("art") == null || videoAttributes.getNamedItem("thumb") == null) {
