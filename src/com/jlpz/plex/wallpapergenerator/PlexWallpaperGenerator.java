@@ -126,7 +126,7 @@ public class PlexWallpaperGenerator {
 	    graphics.drawImage(resizedPosterImage, resizedPosterImage.getWidth(null) + resizedStillImage.getWidth(null),
 		    0, null);
 
-	    ImageIO.write(combinedImage, "PNG", targetFile);
+	    ImageIO.write(combinedImage, "JPG", targetFile);
 	    System.out.println("File generated: " + targetFile.getCanonicalPath());
 
 	    if (previousFiles.length > 0)
