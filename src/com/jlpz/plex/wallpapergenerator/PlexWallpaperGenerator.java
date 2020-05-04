@@ -98,13 +98,13 @@ public class PlexWallpaperGenerator {
 
     private static void handleMovie(final String id, final String stillUrl, final String posterUrl,
 	    final String targetFileName) throws IOException {
-	final File targetFile = new File(TARGET_DIRECTORY_PATH, targetFileName + "." + id + ".png");
+	final File targetFile = new File(TARGET_DIRECTORY_PATH, targetFileName + "." + id + ".jpg");
 	if (targetFile.exists())
 	    return;
 	final File[] previousFiles = new File(TARGET_DIRECTORY_PATH).listFiles(new FilenameFilter() {
 	    @Override
 	    public boolean accept(final File directory, final String name) {
-		return name.endsWith("." + id + ".png");
+		return name.endsWith("." + id + ".jpg");
 	    }
 	});
 
