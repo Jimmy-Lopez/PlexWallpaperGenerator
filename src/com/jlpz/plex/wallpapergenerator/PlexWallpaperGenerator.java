@@ -147,6 +147,7 @@ public class PlexWallpaperGenerator {
     }
 
     public static void main(final String[] args) {
+	boolean warnings = false;
 	try {
 	    if (MANDATORY_GENRES.length > 0)
 		System.out.println("Will only process movies which are tagged with one of these genres: ["
@@ -206,12 +207,20 @@ public class PlexWallpaperGenerator {
 		    }
 		    if (videoAttributes.getNamedItem("art") == null || videoAttributes.getNamedItem("thumb") == null) {
 			System.err.println("Image missing for: " + title);
+			warnings = true;
 			continue;
 		    }
-		    PlexWallpaperGenerator.handleMovie(id,
-			    PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("art").getNodeValue()),
-			    PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("thumb").getNodeValue()),
-			    title);
+		    try {
+			PlexWallpaperGenerator.handleMovie(id,
+				PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("art").getNodeValue()),
+				PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("thumb").getNodeValue()),
+				title);
+		    } catch (final IOException exception) {
+			System.err.println("Error while trying to handle: " + title);
+			exception.printStackTrace();
+			warnings = true;
+			continue;
+		    }
 		    // TODO Use proper LOG library (e.g. SLF4J); remark to apply to all uses of
 		    // System.xxx.print
 		    System.out.println(videoIndex + 1 + ". " + title);
@@ -221,6 +230,10 @@ public class PlexWallpaperGenerator {
 	} catch (final Exception exception) {
 	    // TODO Handle exceptions properly
 	    exception.printStackTrace();
+	    System.exit(1);
 	}
+	if (warnings)
+	    // TODO Document exit codes
+	    System.exit(2);
     }
 }
