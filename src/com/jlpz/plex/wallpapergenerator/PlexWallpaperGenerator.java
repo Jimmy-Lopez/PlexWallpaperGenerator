@@ -75,6 +75,9 @@ public class PlexWallpaperGenerator {
     }
 
     private static Image resizeImage(final BufferedImage image, final int width, final int height) {
+	if (image == null)
+	    throw new NullPointerException("No image to resize.");
+
 	if (width == -1 && height == -1 || width == image.getWidth() && height == image.getHeight())
 	    return image;
 
@@ -215,7 +218,7 @@ public class PlexWallpaperGenerator {
 				PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("art").getNodeValue()),
 				PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("thumb").getNodeValue()),
 				title);
-		    } catch (final IOException exception) {
+		    } catch (final IOException | NullPointerException exception) {
 			System.err.println("Error while trying to handle: " + title);
 			exception.printStackTrace();
 			warnings = true;
