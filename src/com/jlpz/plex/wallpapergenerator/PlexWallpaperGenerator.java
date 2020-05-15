@@ -57,6 +57,20 @@ public class PlexWallpaperGenerator {
 	return value;
     }
 
+    private static String getOptionalSingleSystemProperty(final String shortName,
+	    final String helpDescriptionIfAbsent) {
+	// TODO There's some factorization to do between all these methods
+	final String fullName = PlexWallpaperGenerator.class.getName() + "." + shortName;
+	final String value = System.getProperty(fullName);
+	if (value == null || value.strip().length() == 0) {
+	    System.err.println("Note that a system property " + fullName
+		    + " can be provided (e.g. by passing a command-line argument \"-D" + fullName
+		    + "=<value>\"). Its value would be: " + helpDescriptionIfAbsent);
+	    return null;
+	}
+	return value;
+    }
+
     private static String[] getOptionalMultipleSystemProperty(final String shortName,
 	    final String helpDescriptionIfAbsent) {
 	final String fullName = PlexWallpaperGenerator.class.getName() + "." + shortName;
