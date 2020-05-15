@@ -9,8 +9,11 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -42,9 +45,9 @@ public class PlexWallpaperGenerator {
     private static final String[] FORBIDDEN_KEYWORDS = PlexWallpaperGenerator.getOptionalMultipleSystemProperty(
 	    "FORBIDDEN_KEYWORDS",
 	    "Case-insensitive keywords that - if at least one is contained in a title - indicate which movies are to be skipped");
-    private static final String[] MANDATORY_GENRES = PlexWallpaperGenerator.getOptionalMultipleSystemProperty(
-	    "MANDATORY_GENRES",
-	    "Case-insensitive genres that - if at least one is contained in tags - indicate which movies are to be processed");
+    private static final List<String> MANDATORY_GENRES = Arrays
+	    .asList(PlexWallpaperGenerator.getOptionalMultipleSystemProperty("MANDATORY_GENRES",
+		    "Case-insensitive genres that - if at least one is contained in tags - indicate which movies are to be processed"));
     private static final boolean SIMULATED = Boolean
 	    .valueOf(PlexWallpaperGenerator.getOptionalSingleSystemProperty("SIMULATED", "\"" + Boolean.TRUE.toString()
 		    + "\" to simulate the process without actually generating/deleting any images"));
@@ -133,12 +136,12 @@ public class PlexWallpaperGenerator {
 	    System.out.println(
 		    "File would be generated (if not in \"simulated\" mode): " + targetFile.getCanonicalPath());
 	else {
-	final Image resizedStillImage = PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(stillUrl)),
-		STILL_DIMENSION.width, STILL_DIMENSION.height);
-	final Image resizedPosterImage = PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(posterUrl)), -1,
-		POSTER_HEIGHT);
+	    final Image resizedStillImage = PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(stillUrl)),
+		    STILL_DIMENSION.width, STILL_DIMENSION.height);
+	    final Image resizedPosterImage = PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(posterUrl)), -1,
+		    POSTER_HEIGHT);
 
-	// Combining
+	    // Combining
 	    // TODO Make the layout of the combined image configurable #ConfigurableLayout
 	    final BufferedImage combinedImage = new BufferedImage(
 		    resizedStillImage.getWidth(null) + 2 * resizedPosterImage.getWidth(null),
@@ -170,10 +173,15 @@ public class PlexWallpaperGenerator {
 	return sanitized;
     }
 
+    private static Stream<Node> getNodeListAsStream(final NodeList nodeList) {
+	return nodeList.getLength() == 0 ? Stream.empty()
+		: Stream.iterate(nodeList.item(0), node -> node.getNextSibling()).limit(nodeList.getLength());
+    }
+
     public static void main(final String[] args) {
 	boolean warnings = false;
 	try {
-	    if (MANDATORY_GENRES.length > 0)
+	    if (!MANDATORY_GENRES.isEmpty())
 		System.out.println("Will only process movies which are tagged with one of these genres: ["
 			+ String.join(", ", MANDATORY_GENRES) + "]");
 	    final OkHttpClient client = new OkHttpClient();
@@ -208,27 +216,18 @@ public class PlexWallpaperGenerator {
 				    + forbiddenKeyword.toUpperCase() + "]: " + title);
 			    continue VideoLoop;
 			}
-		    GenreCheck: if (MANDATORY_GENRES.length > 0) {
-			final NodeList videoChildrenNodes = videoNode.getChildNodes();
-			final List<String> genreNames = new ArrayList<>(videoChildrenNodes.getLength());
-			for (int videoChildIndex = 0; videoChildIndex < videoChildrenNodes
-				.getLength(); videoChildIndex++) {
-			    final Node videoChild = videoChildrenNodes.item(videoChildIndex);
-			    if (videoChild.getNodeName().equals("Genre")) {
-				final NamedNodeMap genreAttributes = videoChild.getAttributes();
-				final Node genreTag = genreAttributes.getNamedItem("tag");
-				if (genreTag != null) {
-				    final String genreName = genreTag.getNodeValue().toLowerCase();
-				    for (final String mandatoryGenre : MANDATORY_GENRES)
-					if (mandatoryGenre.equals(genreName))
-					    break GenreCheck;
-				    genreNames.add(genreName);
-				}
-			    }
+
+		    if (!MANDATORY_GENRES.isEmpty()) {
+			final List<String> genreNames = PlexWallpaperGenerator
+				.getNodeListAsStream(videoNode.getChildNodes())
+				.filter(node -> "Genre".equals(node.getNodeName())).map(genreNode -> genreNode
+					.getAttributes().getNamedItem("tag").getNodeValue().toLowerCase())
+				.collect(Collectors.toList());
+			if (Collections.disjoint(genreNames, MANDATORY_GENRES)) {
+			    System.out.println("Skipped because isn't tagged with any of the mandatory genres: " + title
+				    + " [" + String.join(", ", genreNames) + "]");
+			    continue VideoLoop;
 			}
-			System.out.println("Skipped because isn't tagged with any of the mandatory genres: " + title
-				+ " [" + String.join(", ", genreNames) + "]");
-			continue VideoLoop;
 		    }
 		    if (videoAttributes.getNamedItem("art") == null || videoAttributes.getNamedItem("thumb") == null) {
 			System.err.println("Image missing for: " + title);
