@@ -24,7 +24,6 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-// TODO Use a dependency manager (e.g. Maven) instead of duplicated JARs
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
