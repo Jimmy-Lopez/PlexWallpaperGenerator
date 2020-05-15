@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.io.FilenameUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -52,6 +53,9 @@ public class PlexWallpaperGenerator {
     private static final boolean SIMULATED = Boolean
 	    .valueOf(PlexWallpaperGenerator.getOptionalSingleSystemProperty("SIMULATED", "\"" + Boolean.TRUE.toString()
 		    + "\" to simulate the process without actually generating/deleting any images"));
+    private static final String MANDATORY_FILE_PATH_PATTERN = PlexWallpaperGenerator.getOptionalSingleSystemProperty(
+	    "MANDATORY_FILE_PATH_PATTERN",
+	    "Wildcard pattern (i.e. which may use the characters '?' and '*' to represent respectively a single or multiple (zero or more) unspecified characters) that file path of movies must respect for them to be processed");
 
     private static String getMandatorySingleSystemProperty(final String shortName,
 	    final String helpDescriptionIfAbsent) {
@@ -182,6 +186,9 @@ public class PlexWallpaperGenerator {
     public static void main(final String[] args) {
 	boolean warnings = false;
 	try {
+	    if (MANDATORY_FILE_PATH_PATTERN != null)
+		System.out.println("Will only process movies which files respect following pattern: ["
+			+ MANDATORY_FILE_PATH_PATTERN + "]");
 	    if (!MANDATORY_GENRES.isEmpty())
 		System.out.println("Will only process movies which are tagged with one of these genres: ["
 			+ String.join(", ", MANDATORY_GENRES) + "]");
@@ -217,7 +224,24 @@ public class PlexWallpaperGenerator {
 				    + forbiddenKeyword.toUpperCase() + "]: " + title);
 			    continue VideoLoop;
 			}
-
+		    if (MANDATORY_FILE_PATH_PATTERN != null) {
+			final Set<String> mediaPartFilePathes = PlexWallpaperGenerator
+				.getNodeListAsStream(videoNode.getChildNodes())
+				.filter(node -> "Media".equals(node.getNodeName()))
+				.flatMap(mediaNode -> PlexWallpaperGenerator
+					.getNodeListAsStream(mediaNode.getChildNodes())
+					.filter(node -> "Part".equals(node.getNodeName())))
+				.map(partNode -> partNode.getAttributes().getNamedItem("file").getNodeValue())
+				.collect(Collectors.toSet());
+			if (mediaPartFilePathes.stream().filter(
+				filePath -> FilenameUtils.wildcardMatchOnSystem(filePath, MANDATORY_FILE_PATH_PATTERN))
+				.count() == 0) {
+			    System.out
+				    .println("Skipped because corresponding files don't respect the mandatory pattern: "
+					    + title + " [" + String.join(", ", mediaPartFilePathes) + "]");
+			    continue VideoLoop;
+			}
+		    }
 		    if (!MANDATORY_GENRES.isEmpty()) {
 			final Set<String> genreNames = PlexWallpaperGenerator
 				.getNodeListAsStream(videoNode.getChildNodes())
