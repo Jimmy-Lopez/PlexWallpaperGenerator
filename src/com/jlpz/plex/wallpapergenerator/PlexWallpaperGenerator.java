@@ -45,6 +45,9 @@ public class PlexWallpaperGenerator {
     private static final String[] MANDATORY_GENRES = PlexWallpaperGenerator.getOptionalMultipleSystemProperty(
 	    "MANDATORY_GENRES",
 	    "Case-insensitive genres that - if at least one is contained in tags - indicate which movies are to be processed");
+    private static final boolean SIMULATED = Boolean
+	    .valueOf(PlexWallpaperGenerator.getOptionalSingleSystemProperty("SIMULATED", "\"" + Boolean.TRUE.toString()
+		    + "\" to simulate the process without actually generating/deleting any images"));
 
     private static String getMandatorySingleSystemProperty(final String shortName,
 	    final String helpDescriptionIfAbsent) {
@@ -126,13 +129,16 @@ public class PlexWallpaperGenerator {
 	    }
 	});
 
+	if (SIMULATED)
+	    System.out.println(
+		    "File would be generated (if not in \"simulated\" mode): " + targetFile.getCanonicalPath());
+	else {
 	final Image resizedStillImage = PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(stillUrl)),
 		STILL_DIMENSION.width, STILL_DIMENSION.height);
 	final Image resizedPosterImage = PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(posterUrl)), -1,
 		POSTER_HEIGHT);
 
 	// Combining
-	{
 	    // TODO Make the layout of the combined image configurable #ConfigurableLayout
 	    final BufferedImage combinedImage = new BufferedImage(
 		    resizedStillImage.getWidth(null) + 2 * resizedPosterImage.getWidth(null),
