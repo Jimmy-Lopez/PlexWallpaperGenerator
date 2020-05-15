@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,9 +45,10 @@ public class PlexWallpaperGenerator {
     private static final String[] FORBIDDEN_KEYWORDS = PlexWallpaperGenerator.getOptionalMultipleSystemProperty(
 	    "FORBIDDEN_KEYWORDS",
 	    "Case-insensitive keywords that - if at least one is contained in a title - indicate which movies are to be skipped");
-    private static final List<String> MANDATORY_GENRES = Arrays
-	    .asList(PlexWallpaperGenerator.getOptionalMultipleSystemProperty("MANDATORY_GENRES",
-		    "Case-insensitive genres that - if at least one is contained in tags - indicate which movies are to be processed"));
+    private static final Set<String> MANDATORY_GENRES = Arrays
+	    .stream(PlexWallpaperGenerator.getOptionalMultipleSystemProperty("MANDATORY_GENRES",
+		    "Case-insensitive genres that - if at least one is contained in tags - indicate which movies are to be processed"))
+	    .collect(Collectors.toSet());
     private static final boolean SIMULATED = Boolean
 	    .valueOf(PlexWallpaperGenerator.getOptionalSingleSystemProperty("SIMULATED", "\"" + Boolean.TRUE.toString()
 		    + "\" to simulate the process without actually generating/deleting any images"));
@@ -218,11 +219,11 @@ public class PlexWallpaperGenerator {
 			}
 
 		    if (!MANDATORY_GENRES.isEmpty()) {
-			final List<String> genreNames = PlexWallpaperGenerator
+			final Set<String> genreNames = PlexWallpaperGenerator
 				.getNodeListAsStream(videoNode.getChildNodes())
 				.filter(node -> "Genre".equals(node.getNodeName())).map(genreNode -> genreNode
 					.getAttributes().getNamedItem("tag").getNodeValue().toLowerCase())
-				.collect(Collectors.toList());
+				.collect(Collectors.toSet());
 			if (Collections.disjoint(genreNames, MANDATORY_GENRES)) {
 			    System.out.println("Skipped because isn't tagged with any of the mandatory genres: " + title
 				    + " [" + String.join(", ", genreNames) + "]");
