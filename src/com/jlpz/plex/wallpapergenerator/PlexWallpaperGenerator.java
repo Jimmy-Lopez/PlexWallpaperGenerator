@@ -30,14 +30,14 @@ public class PlexWallpaperGenerator {
     private static final Dimension STILL_DIMENSION = new Dimension(1924, 1080);
     // TODO see #ConfigurableLayout
     private static final int POSTER_HEIGHT = 692;
-    private static final String TARGET_DIRECTORY_PATH = PlexWallpaperGenerator.getMandatorySystemProperty(
+    private static final String TARGET_DIRECTORY_PATH = PlexWallpaperGenerator.getMandatorySingleSystemProperty(
 	    "TARGET_DIRECTORY_PATH", "Full path of the directory where the wallpaper images will be generated");
-    private static final String SERVER_URL = PlexWallpaperGenerator.getMandatorySystemProperty("SERVER_URL",
+    private static final String SERVER_URL = PlexWallpaperGenerator.getMandatorySingleSystemProperty("SERVER_URL",
 	    "Root URL of the PLEX server (e.g. \"http://192.168.0.1:32400\")");
-    private static final String AUTHENTICATION_TOKEN = PlexWallpaperGenerator.getMandatorySystemProperty(
+    private static final String AUTHENTICATION_TOKEN = PlexWallpaperGenerator.getMandatorySingleSystemProperty(
 	    "AUTHENTICATION_TOKEN",
 	    "X-Plex-Token to use to authenticate on the PLEX server (see https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)");
-    private static final String LIBRARY_ID = PlexWallpaperGenerator.getMandatorySystemProperty("LIBRARY_ID",
+    private static final String LIBRARY_ID = PlexWallpaperGenerator.getMandatorySingleSystemProperty("LIBRARY_ID",
 	    "Section ID of the library you want to generate wallpapers from (you can find it in the attribute \"librarySectionID\" of the same XML page used to retrieve the X-Plex-Token)");
     private static final String[] FORBIDDEN_KEYWORDS = PlexWallpaperGenerator.getOptionalMultipleSystemProperty(
 	    "FORBIDDEN_KEYWORDS",
@@ -46,7 +46,8 @@ public class PlexWallpaperGenerator {
 	    "MANDATORY_GENRES",
 	    "Case-insensitive genres that - if at least one is contained in tags - indicate which movies are to be processed");
 
-    private static String getMandatorySystemProperty(final String shortName, final String helpDescriptionIfAbsent) {
+    private static String getMandatorySingleSystemProperty(final String shortName,
+	    final String helpDescriptionIfAbsent) {
 	final String fullName = PlexWallpaperGenerator.class.getName() + "." + shortName;
 	final String value = System.getProperty(fullName);
 	if (value == null)
