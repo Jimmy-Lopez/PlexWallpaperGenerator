@@ -177,8 +177,9 @@ public class PlexWallpaperGenerator {
 		System.out.println("Will only process movies which are tagged with one of these genres: ["
 			+ String.join(", ", MANDATORY_GENRES) + "]");
 	    final OkHttpClient client = new OkHttpClient();
-	    final Request request = new Request.Builder()
-		    .url(PlexWallpaperGenerator.getFullUrl("/library/sections/" + LIBRARY_ID + "/all")).get().build();
+	    final String url = PlexWallpaperGenerator.getFullUrl("/library/sections/" + LIBRARY_ID + "/all");
+	    System.out.println("Querying URL: " + url);
+	    final Request request = new Request.Builder().url(url).get().build();
 	    try (Response response = client.newCall(request).execute()) {
 		if (!response.isSuccessful())
 		    throw new IOException("Unexpected response code: " + response + " " + response.body().string());
