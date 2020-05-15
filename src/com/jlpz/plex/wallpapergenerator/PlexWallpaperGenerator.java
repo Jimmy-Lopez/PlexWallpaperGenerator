@@ -11,11 +11,16 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.io.FilenameUtils;
@@ -55,6 +60,22 @@ public class PlexWallpaperGenerator {
     private static final String MANDATORY_FILE_PATH_PATTERN = PlexWallpaperGenerator.getOptionalSingleSystemProperty(
 	    "MANDATORY_FILE_PATH_PATTERN",
 	    "Wildcard pattern (i.e. which may use the characters '?' and '*' to represent respectively a single or multiple (zero or more) unspecified characters) that file path of movies must respect for them to be processed");
+    private static final String IMAGE_FORMAT_DEFAULT = "JPG";
+    private static final String IMAGE_FORMAT = Optional
+	    .ofNullable(PlexWallpaperGenerator.getOptionalSingleSystemProperty("IMAGE_FORMAT",
+		    "Format to use to generate images (e.g.: JPG, PNG, etc; default being \"" + IMAGE_FORMAT_DEFAULT
+			    + "\")"))
+	    .orElse(IMAGE_FORMAT_DEFAULT).toLowerCase();
+    private static final String IMAGE_QUALITY_DEFAULT = "75";
+    private static final float IMAGE_QUALITY = (float) Integer
+	    .valueOf(
+		    Optional.ofNullable(
+			    PlexWallpaperGenerator
+				    .getOptionalSingleSystemProperty("IMAGE_QUALITY",
+					    "Percentage of quality to apply when generating images (default being \""
+						    + IMAGE_QUALITY_DEFAULT + "\")"))
+			    .orElse(IMAGE_QUALITY_DEFAULT))
+	    / 100f;
 
     private static String getMandatorySingleSystemProperty(final String shortName,
 	    final String helpDescriptionIfAbsent) {
@@ -124,15 +145,39 @@ public class PlexWallpaperGenerator {
 		.getScaledInstance(width, height, Image.SCALE_SMOOTH);
     }
 
+    private static void writeImage(final BufferedImage image, final String format, final float quality,
+	    final File targetFile) throws IOException {
+	if (quality < 0f)
+	    ImageIO.write(image, format, targetFile);
+	else {
+	    // TODO-CHECK Wouldn't it be good for performances to instanciate Image writer &
+	    // params only once and for all?
+	    final ImageWriter writer = ImageIO.getImageWritersByFormatName(format).next();
+	    final ImageWriteParam params = writer.getDefaultWriteParam();
+	    params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+	    params.setCompressionQuality(quality);
+	    params.setProgressiveMode(ImageWriteParam.MODE_DISABLED);
+	    try (final ImageOutputStream stream = ImageIO.createImageOutputStream(targetFile)) {
+		writer.setOutput(stream);
+		try {
+		    writer.write(null, new IIOImage(image, null, null), params);
+		} finally {
+		    writer.dispose();
+		    stream.flush();
+		}
+	    }
+	}
+    }
+
     private static void handleMovie(final String id, final String stillUrl, final String posterUrl,
 	    final String targetFileName) throws IOException {
-	final File targetFile = new File(TARGET_DIRECTORY_PATH, targetFileName + "." + id + ".jpg");
+	final File targetFile = new File(TARGET_DIRECTORY_PATH, targetFileName + "." + id + "." + IMAGE_FORMAT);
 	if (targetFile.exists())
 	    return;
 	final File[] previousFiles = new File(TARGET_DIRECTORY_PATH).listFiles(new FilenameFilter() {
 	    @Override
 	    public boolean accept(final File directory, final String name) {
-		return name.endsWith("." + id + ".jpg");
+		return name.endsWith("." + id + "." + IMAGE_FORMAT);
 	    }
 	});
 
@@ -157,7 +202,7 @@ public class PlexWallpaperGenerator {
 	    graphics.drawImage(resizedPosterImage, resizedPosterImage.getWidth(null) + resizedStillImage.getWidth(null),
 		    0, null);
 
-	    ImageIO.write(combinedImage, "JPG", targetFile);
+	    PlexWallpaperGenerator.writeImage(combinedImage, IMAGE_FORMAT, IMAGE_QUALITY, targetFile);
 	    System.out.println("File generated: " + targetFile.getCanonicalPath());
 
 	    if (previousFiles.length > 0)
