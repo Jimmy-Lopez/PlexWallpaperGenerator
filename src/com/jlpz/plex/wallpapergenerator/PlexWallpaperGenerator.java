@@ -77,6 +77,16 @@ public class PlexWallpaperGenerator {
 						    + IMAGE_QUALITY_DEFAULT + "\")"))
 			    .orElse(IMAGE_QUALITY_DEFAULT))
 	    / 100f;
+    private static final String IMAGE_DARKNESS_DEFAULT = "0";
+    private static final float IMAGE_BRIGHTNESS = (float) (100 - Integer
+	    .valueOf(
+		    Optional.ofNullable(
+			    PlexWallpaperGenerator
+				    .getOptionalSingleSystemProperty("IMAGE_DARKNESS",
+					    "Percentage of darkness to apply when generating images (default being \""
+						    + IMAGE_DARKNESS_DEFAULT + "\")"))
+			    .orElse(IMAGE_DARKNESS_DEFAULT)))
+	    / 100f;
 
     private static String getMandatorySingleSystemProperty(final String shortName,
 	    final String helpDescriptionIfAbsent) {
@@ -203,7 +213,8 @@ public class PlexWallpaperGenerator {
 	    graphics.drawImage(resizedPosterImage, resizedPosterImage.getWidth(null) + resizedStillImage.getWidth(null),
 		    0, null);
 
-	    combinedImage = new RescaleOp(.5f, 0, null).filter(combinedImage, null);
+	    if (IMAGE_BRIGHTNESS<1f)
+	        combinedImage = new RescaleOp(IMAGE_BRIGHTNESS, 0, null).filter(combinedImage, null);
 		
 	    PlexWallpaperGenerator.writeImage(combinedImage, IMAGE_FORMAT, IMAGE_QUALITY, targetFile);
 	    System.out.println("File generated: " + targetFile.getCanonicalPath());
