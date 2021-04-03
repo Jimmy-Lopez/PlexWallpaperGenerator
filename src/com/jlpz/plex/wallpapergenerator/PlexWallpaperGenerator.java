@@ -244,17 +244,17 @@ public class PlexWallpaperGenerator {
         } else {
             final Image resizedStillImage = PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(stillUrl)),
                     STILL_DIMENSION.width, STILL_DIMENSION.height);
-            final int posterCount = RIGHT_POSTER_POSITION == Position.NONE && LEFT_POSTER_POSITION == Position.NONE ? 0
-                    : RIGHT_POSTER_POSITION != Position.NONE && LEFT_POSTER_POSITION != Position.NONE ? 2 : 1;
-            final Image resizedPosterImage = posterCount == 0 ? null
+            final Image resizedPosterImage = RIGHT_POSTER_POSITION == Position.NONE && LEFT_POSTER_POSITION == Position.NONE? null
                     : PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(posterUrl)), -1, POSTER_HEIGHT);
 
             // Combining
             // TODO Make the layout of the combined image configurable #ConfigurableLayout
-            final int posterWidth = posterCount == 0 ? 0 : (2 * POSTER_MARGIN + resizedPosterImage.getWidth(null));
-            final int posterHeight = posterCount == 0 ? 0 : (2 * POSTER_MARGIN + resizedPosterImage.getHeight(null));
+            final int posterWidth = resizedPosterImage==null? 0: 2 * POSTER_MARGIN + resizedPosterImage.getWidth(null);
+            final int posterHeight = resizedPosterImage==null? 0: 2 * POSTER_MARGIN + resizedPosterImage.getHeight(null);
             BufferedImage combinedImage = new BufferedImage(
-                    resizedStillImage.getWidth(null) + posterCount * posterWidth,
+                    resizedStillImage.getWidth(null)
+                        + (RIGHT_POSTER_POSITION == Position.EXTERNAL? posterWidth: 0)
+                        + (LEFT_POSTER_POSITION == Position.EXTERNAL? posterWidth: 0),
                     Math.max(posterHeight, resizedStillImage.getHeight(null)), BufferedImage.TYPE_INT_RGB);
             final Graphics graphics = combinedImage.getGraphics();
             graphics.drawImage(resizedStillImage, RIGHT_POSTER_POSITION == Position.EXTERNAL ? posterWidth : 0, 0,
