@@ -1,5 +1,6 @@
 package com.jlpz.plex.wallpapergenerator;
 
+import java.awt.image.RescaleOp;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -192,7 +193,7 @@ public class PlexWallpaperGenerator {
 
 	    // Combining
 	    // TODO Make the layout of the combined image configurable #ConfigurableLayout
-	    final BufferedImage combinedImage = new BufferedImage(
+	    BufferedImage combinedImage = new BufferedImage(
 		    resizedStillImage.getWidth(null) + 2 * resizedPosterImage.getWidth(null),
 		    Math.max(resizedPosterImage.getHeight(null), resizedStillImage.getHeight(null)),
 		    BufferedImage.TYPE_INT_RGB);
@@ -202,6 +203,8 @@ public class PlexWallpaperGenerator {
 	    graphics.drawImage(resizedPosterImage, resizedPosterImage.getWidth(null) + resizedStillImage.getWidth(null),
 		    0, null);
 
+	    combinedImage = new RescaleOp(.5f, 0, null).filter(combinedImage, null);
+		
 	    PlexWallpaperGenerator.writeImage(combinedImage, IMAGE_FORMAT, IMAGE_QUALITY, targetFile);
 	    System.out.println("File generated: " + targetFile.getCanonicalPath());
 
