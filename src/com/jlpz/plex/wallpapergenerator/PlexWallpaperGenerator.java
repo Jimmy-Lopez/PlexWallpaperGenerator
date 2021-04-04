@@ -227,9 +227,12 @@ public class PlexWallpaperGenerator {
 
     private static void handleMovie(final String id, final String stillUrl, final String posterUrl,
             final String targetFileName, final long lastUpdated) throws IOException {
-        final File targetFile = new File(TARGET_DIRECTORY_PATH, targetFileName + "." + id + "." + IMAGE_FORMAT);
-        if (targetFile.exists() && targetFile.lastModified() > lastUpdated) {
-            return;
+        File targetFile = new File(TARGET_DIRECTORY_PATH, targetFileName + "." + id + "." + IMAGE_FORMAT);
+        if (targetFile.exists()) {
+            if (targetFile.lastModified() > lastUpdated)
+                return;
+            targetFile.delete();
+            targetFile = new File(TARGET_DIRECTORY_PATH, targetFileName + "." + id + "." + IMAGE_FORMAT);
         }
         final File[] previousFiles = new File(TARGET_DIRECTORY_PATH).listFiles(new FilenameFilter() {
             @Override
