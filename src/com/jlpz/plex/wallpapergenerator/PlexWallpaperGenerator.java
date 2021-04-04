@@ -226,9 +226,9 @@ public class PlexWallpaperGenerator {
     }
 
     private static void handleMovie(final String id, final String stillUrl, final String posterUrl,
-            final String targetFileName) throws IOException {
+            final String targetFileName, final long lastUpdated) throws IOException {
         final File targetFile = new File(TARGET_DIRECTORY_PATH, targetFileName + "." + id + "." + IMAGE_FORMAT);
-        if (targetFile.exists()) {
+        if (targetFile.exists() && targetFile.lastModified() > lastUpdated) {
             return;
         }
         final File[] previousFiles = new File(TARGET_DIRECTORY_PATH).listFiles(new FilenameFilter() {
@@ -244,17 +244,19 @@ public class PlexWallpaperGenerator {
         } else {
             final Image resizedStillImage = PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(stillUrl)),
                     STILL_DIMENSION.width, STILL_DIMENSION.height);
-            final Image resizedPosterImage = RIGHT_POSTER_POSITION == Position.NONE && LEFT_POSTER_POSITION == Position.NONE? null
-                    : PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(posterUrl)), -1, POSTER_HEIGHT);
+            final Image resizedPosterImage = RIGHT_POSTER_POSITION == Position.NONE
+                    && LEFT_POSTER_POSITION == Position.NONE ? null
+                            : PlexWallpaperGenerator.resizeImage(ImageIO.read(new URL(posterUrl)), -1, POSTER_HEIGHT);
 
             // Combining
             // TODO Make the layout of the combined image configurable #ConfigurableLayout
-            final int posterWidth = resizedPosterImage==null? 0: 2 * POSTER_MARGIN + resizedPosterImage.getWidth(null);
-            final int posterHeight = resizedPosterImage==null? 0: 2 * POSTER_MARGIN + resizedPosterImage.getHeight(null);
+            final int posterWidth = resizedPosterImage == null ? 0
+                    : 2 * POSTER_MARGIN + resizedPosterImage.getWidth(null);
+            final int posterHeight = resizedPosterImage == null ? 0
+                    : 2 * POSTER_MARGIN + resizedPosterImage.getHeight(null);
             BufferedImage combinedImage = new BufferedImage(
-                    resizedStillImage.getWidth(null)
-                        + (RIGHT_POSTER_POSITION == Position.EXTERNAL? posterWidth: 0)
-                        + (LEFT_POSTER_POSITION == Position.EXTERNAL? posterWidth: 0),
+                    resizedStillImage.getWidth(null) + (RIGHT_POSTER_POSITION == Position.EXTERNAL ? posterWidth : 0)
+                            + (LEFT_POSTER_POSITION == Position.EXTERNAL ? posterWidth : 0),
                     Math.max(posterHeight, resizedStillImage.getHeight(null)), BufferedImage.TYPE_INT_RGB);
             final Graphics graphics = combinedImage.getGraphics();
             graphics.drawImage(resizedStillImage, RIGHT_POSTER_POSITION == Position.EXTERNAL ? posterWidth : 0, 0,
@@ -387,7 +389,8 @@ public class PlexWallpaperGenerator {
                         PlexWallpaperGenerator.handleMovie(id,
                                 PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("art").getNodeValue()),
                                 PlexWallpaperGenerator.getFullUrl(videoAttributes.getNamedItem("thumb").getNodeValue()),
-                                title);
+                                title,
+                                Long.parseLong(videoAttributes.getNamedItem("updatedAt").getNodeValue()) * 1000L);
                     } catch (final IOException | NullPointerException exception) {
                         System.err.println("Error while trying to handle: " + title);
                         exception.printStackTrace();
